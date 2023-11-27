@@ -1,2 +1,4 @@
 flights.csv
 parameters.csv
+.vscode/
+venv/
