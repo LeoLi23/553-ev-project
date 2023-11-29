@@ -7,7 +7,7 @@ class Encoder(nn.Module):
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
 
     def forward(self, x):
-        outputs, (hidden, cell) = self.lstm(x)
+        _, (hidden, cell) = self.lstm(x)
         return hidden, cell
 
 class Decoder(nn.Module):
@@ -17,9 +17,16 @@ class Decoder(nn.Module):
         self.fc = nn.Linear(hidden_size, 1)
 
     def forward(self, x, hidden, cell):
-        output, (hidden, cell) = self.lstm(x, (hidden, cell))
-        prediction = self.fc(output[:, -1, :])
-        return prediction, hidden, cell
+        outputs = []
+        for _ in range(2):  # output_seq_len is 2
+            output, (hidden, cell) = self.lstm(x, (hidden, cell))
+            output = self.fc(output[:, -1, :])
+            outputs.append(output)
+            x = output.unsqueeze(1)
+
+        outputs = torch.cat(outputs, dim=1)
+        return outputs, hidden, cell
+
         
 class Seq2Seq(nn.Module):
     def __init__(self, encoder, decoder):
@@ -27,16 +34,11 @@ class Seq2Seq(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, source, target_len):
+    def forward(self, source):
         batch_size = source.size(0)
         hidden, cell = self.encoder(source)
 
         decoder_input = torch.zeros(batch_size, 1, 1, device=source.device)  # Starting input for decoder
-        outputs = torch.zeros(batch_size, target_len, 1, device=source.device)
-
-        for t in range(target_len):
-            output, hidden, cell = self.decoder(decoder_input, hidden, cell)
-            outputs[:, t] = output.view(batch_size, 1)
-            decoder_input = output.view(batch_size, 1, 1)
+        outputs, _, _ = self.decoder(decoder_input, hidden, cell)  # Get the full output sequence
 
         return outputs
