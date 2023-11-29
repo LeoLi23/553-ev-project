@@ -2,3 +2,4 @@ flights.csv
 parameters.csv
 .vscode/
 venv/
+__pycache__/

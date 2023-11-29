@@ -1,15 +1,11 @@
-import os
 import torch
 import pandas as pd
-from skimage import io, transform
 import numpy as np
 import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, utils
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset, DataLoader
-
 
 # Ignore warnings
 import warnings
@@ -29,8 +25,11 @@ def create_sequences(input_data, output_data, input_seq_len, output_seq_len):
 
 def create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state):
     # Generate Input and Output Sequences
-    input_seq, output_seq = create_sequences(data.values,data.values, input_seq_len, output_seq_len)
+    features = getFeatures()
+    input_seq, output_seq = create_sequences(data[features].values,data["energy_consumed"].values, input_seq_len, output_seq_len)
 
+    print(data["energy_consumed"].values)
+    
     # Split the data into training, validation, and test sets 
     X_train, X_test, y_train, y_test = train_test_split(input_seq, output_seq, test_size=test_size, random_state=rand_state)
     X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=val_size, random_state=rand_state)  # 0.25 x 0.8 = 0.2
@@ -82,49 +81,58 @@ def calculate_consumptions(dataset):
     dataset['energy_consumed'] = dataset.groupby('flight')['energy_atm'].cumsum()
     return dataset
 
-data = pd.read_csv('Quadcopter_dataset_cmu/flights.csv')    
-print(data)
+def get_data_loaders():
+    # Read the data from the CSV file
+    data = pd.read_csv('flights.csv')    
 
-# Apply the function to the altitude column and join with the original dataframe
-altitude_features = data['altitude'].apply(parse_altitude)
-data = data.join(altitude_features)
-# Now remove the original 'altitude' column as it's been replaced with numeric features
-data.drop('altitude', axis=1, inplace=True)
+    # Apply the function to the altitude column and join with the original dataframe
+    altitude_features = data['altitude'].apply(parse_altitude)
+    data = data.join(altitude_features)
+    # Now remove the original 'altitude' column as it's been replaced with numeric features
+    data.drop('altitude', axis=1, inplace=True)
 
-#Convert Route ID to number 0-10
-data['route'] = data['route'].replace(['R1','R2','R3','R4','R5','R6','R7','A1','A2','A3','H'],[0,1,2,3,4,5,6,7,8,9,10])
-#Remove 'date' and 'time-day' from the dataset
-data.drop(['date','time_day'], axis = 1, inplace = True)
-#calculating power consumption (W)
-data['power'] = data['battery_voltage'] * data['battery_current']
+    #Convert Route ID to number 0-10
+    data['route'] = data['route'].replace(['R1','R2','R3','R4','R5','R6','R7','A1','A2','A3','H'],[0,1,2,3,4,5,6,7,8,9,10])
+    #Remove 'date' and 'time-day' from the dataset
+    data.drop(['date','time_day'], axis = 1, inplace = True)
+    #calculating power consumption (W)
+    data['power'] = data['battery_voltage'] * data['battery_current']
 
-#calculation current consumption (Amp * s)
-data = calculate_consumptions(data)
-
-
-# Normalize the selected dataset features
-
-features = ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
-                                'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
-                                'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
-                                'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
-                                'energy_atm','current_consumed','energy_consumed']
-
-# Apply MinMaxScaler to the features except time & flight
-scaler = MinMaxScaler()
-data[features] = scaler.fit_transform(data[features])
-
-print(data)
+    #calculation current consumption (Amp * s)
+    data = calculate_consumptions(data)
 
 
-#Create Data loaders 
+    # Normalize the selected dataset features
 
-input_seq_len = 2
-output_seq_len = 2
-test_size = 0.2
-val_size = 0.25
-batch_size = 64
-rand_state = 42
+    features = ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
+                                    'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
+                                    'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
+                                    'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
+                                    'energy_atm','current_consumed','energy_consumed']
 
-train_loader, val_loader, test_loader = create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state)
-print(test_loader)
+    # Apply MinMaxScaler to the features except time & flight
+    scaler = MinMaxScaler()
+    data[features] = scaler.fit_transform(data[features])
+
+    #Create Data loaders 
+
+    input_seq_len = 10
+    output_seq_len = 2
+    test_size = 0.2
+    val_size = 0.25
+    batch_size = 64
+    rand_state = 42
+    
+    train_loader, val_loader, test_loader = create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state)
+    return data, train_loader, val_loader, test_loader
+
+def getFeatures():
+    return ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
+                                    'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
+                                    'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
+                                    'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
+                                    'energy_atm','current_consumed','energy_consumed']
+    
+
+if __name__ == "__main__":
+    print(len(getFeatures()))

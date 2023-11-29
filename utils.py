@@ -1,19 +1,21 @@
-import numpy as np
-import pandas as pd 
+import matplotlib.pyplot as plt
 
-def parse_altitude(altitude_str):
-    altitude_str = str(altitude_str)
-    altitudes = [int(alt) for alt in altitude_str.split('-')]
-    max_altitude = max(altitudes)
-    min_altitude = min(altitudes)
-    mean_altitude = sum(altitudes) / len(altitudes)
-    return pd.Series([max_altitude, min_altitude, mean_altitude], index=['max_altitude', 'min_altitude', 'mean_altitude'])
+def plot_losses(train_losses, val_losses):
+    plt.figure(figsize=(10, 5))
+    plt.plot(train_losses, label='Training Loss')
+    plt.plot(val_losses, label='Validation Loss')
+    plt.title('Training and Validation Loss (MSE)')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
     
-# Function to create sequences 
-def create_sequences(input_data, output_data, sequence_length):
-    sequences = []
-    output = []
-    for i in range(len(input_data) - sequence_length):
-        sequences.append(input_data[i:i+sequence_length])
-        output.append(output_data[i+sequence_length])
-    return np.array(sequences), np.array(output)
+def plot_column(data, col_name):
+    plt.figure(figsize=(10, 5))
+    plt.plot(data[col_name], label=col_name)
+    plt.xlabel('time')
+    plt.title('Energy Consumed')
+    plt.grid(True)
+    plt.show()
+
