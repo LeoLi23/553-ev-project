@@ -81,9 +81,13 @@ def calculate_consumptions(dataset):
     dataset['energy_consumed'] = dataset.groupby('flight')['energy_atm'].cumsum()
     return dataset
 
-def get_data_loaders():
+def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
+    test_size = 0.2,
+    val_size = 0.25,
+    batch_size = 64,
+    rand_state = 42):
     # Read the data from the CSV file
-    data = pd.read_csv('flights.csv')    
+    # data = pd.read_csv('flights.csv')    
 
     # Apply the function to the altitude column and join with the original dataframe
     altitude_features = data['altitude'].apply(parse_altitude)
@@ -116,12 +120,7 @@ def get_data_loaders():
 
     #Create Data loaders 
 
-    input_seq_len = 10
-    output_seq_len = 2
-    test_size = 0.2
-    val_size = 0.25
-    batch_size = 64
-    rand_state = 42
+    
     
     train_loader, val_loader, test_loader = create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state)
     return data, train_loader, val_loader, test_loader
