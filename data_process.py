@@ -28,7 +28,7 @@ def create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size,
     features = getFeatures()
     input_seq, output_seq = create_sequences(data[features].values,data["energy_consumed"].values, input_seq_len, output_seq_len)
 
-    print(data["energy_consumed"].values)
+    # print(data["energy_consumed"].values)
     
     # Split the data into training, validation, and test sets 
     X_train, X_test, y_train, y_test = train_test_split(input_seq, output_seq, test_size=test_size, random_state=rand_state)
