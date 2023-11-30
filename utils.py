@@ -32,8 +32,8 @@ def plot_output(y_pred_seq, y_true_seq, seq_len):
         for j in range(seq_len):
                 pred_arr.append(y_pred_seq[i][j].detach().numpy())
                 true_arr.append(y_true_seq[i][j].detach().numpy())
-    print(pred_arr)
-    print(true_arr)
+    # print(pred_arr)
+    # print(true_arr)
     plt.figure(figsize=(10, 5))
     plt.plot(pred_arr, label='prediction_seq')
     plt.plot(true_arr, label='GndTruth_seq')
