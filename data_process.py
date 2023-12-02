@@ -23,10 +23,10 @@ def create_sequences(input_data, output_data, input_seq_len, output_seq_len):
         output_seq.append(output_data[i+input_seq_len : i+input_seq_len+output_seq_len])
     return np.array(input_seq), np.array(output_seq)
 
-def create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state):
+def create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target: str):
     # Generate Input and Output Sequences
     features = getFeatures()
-    input_seq, output_seq = create_sequences(data[features].values,data["energy_consumed"].values, input_seq_len, output_seq_len)
+    input_seq, output_seq = create_sequences(data[features].values,data[target].values, input_seq_len, output_seq_len)
 
     # print(data["energy_consumed"].values)
     
@@ -85,7 +85,8 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
     test_size = 0.2,
     val_size = 0.25,
     batch_size = 64,
-    rand_state = 42):
+    rand_state = 42,
+    target = 'power'):
     # Read the data from the CSV file
     # data = pd.read_csv('flights.csv')    
 
@@ -122,7 +123,7 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
 
     
     
-    train_loader, val_loader, test_loader = create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state)
+    train_loader, val_loader, test_loader = create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target)
     return data, train_loader, val_loader, test_loader
 
 def getFeatures():
