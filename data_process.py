@@ -54,6 +54,54 @@ def create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size,
 
     return train_loader, val_loader, test_loader
 
+def create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target: str):
+    ##
+    # Getting data sets by unique flights
+    uniq_flights = data['flight'].unique()
+
+    # Split the data into training, validation, and test sets 
+    train_flights, test_flights = train_test_split(uniq_flights, test_size= test_size, random_state=rand_state)
+    train_flights, val_flights = train_test_split(train_flights, test_size = val_size, random_state=rand_state)
+
+    train_data = data[data['flight'].isin(train_flights)]
+    val_data = data[data['flight'].isin(val_flights)]
+    test_data = data[data['flight'].isin(test_flights)]
+    # print("TRAIN DATA")
+    # print(train_data)
+
+    # print("VAL DATA")
+    # print(val_data)
+
+    # print("TEST DATA")
+    # print(test_data)
+    # Generate Input and Output Sequences
+    features = getFeatures()
+    train_input_seq, train_output_seq = create_sequences(train_data[features].values,train_data[target].values, input_seq_len, output_seq_len)
+    val_input_seq, val_output_seq = create_sequences(val_data[features].values,val_data[target].values, input_seq_len, output_seq_len)
+    test_input_seq, test_output_seq = create_sequences(test_data[features].values,test_data[target].values, input_seq_len, output_seq_len)
+
+    # Convert to PyTorch tensors
+    X_train = torch.tensor(train_input_seq, dtype=torch.float32)
+    y_train = torch.tensor(train_output_seq, dtype=torch.float32)
+    X_val = torch.tensor(val_input_seq, dtype=torch.float32)
+    y_val = torch.tensor(val_output_seq, dtype=torch.float32)
+    X_test = torch.tensor(test_input_seq, dtype=torch.float32)
+    y_test = torch.tensor(test_output_seq, dtype=torch.float32)
+
+    # create dataloader
+    train_data = TensorDataset(X_train, y_train)
+    train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size)
+
+    val_data = TensorDataset(X_val, y_val)
+    val_loader = DataLoader(val_data, batch_size=batch_size)
+
+    test_data = TensorDataset(X_test, y_test)
+    test_loader = DataLoader(test_data, batch_size=batch_size)
+    return train_loader, val_loader, test_loader
+    ##
+
+
+
 def parse_altitude(altitude_str):
     altitude_str = str(altitude_str)
     altitudes = [int(alt) for alt in altitude_str.split('-')]
@@ -81,7 +129,16 @@ def calculate_consumptions(dataset):
     dataset['energy_consumed'] = dataset.groupby('flight')['energy_atm'].cumsum()
     return dataset
 
-def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
+
+def calculate_futures(dataset, step_into_future = 12):
+    dataset['x_future'] = dataset.groupby('flight')['position_x'].shift(-step_into_future)
+    dataset['y_future'] = dataset.groupby('flight')['position_y'].shift(-step_into_future)
+    dataset['z_future'] = dataset.groupby('flight')['position_z'].shift(-step_into_future)
+    dataset = dataset.dropna()
+    return dataset 
+
+
+def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2, step_into_future = 12,
     test_size = 0.2,
     val_size = 0.25,
     batch_size = 64,
@@ -105,15 +162,11 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
 
     #calculation current consumption (Amp * s)
     data = calculate_consumptions(data)
-
+    data = calculate_futures(data, step_into_future)
 
     # Normalize the selected dataset features
 
-    features = ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
-                                    'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
-                                    'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
-                                    'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
-                                    'energy_atm','current_consumed','energy_consumed']
+    features = getFeatures()
 
     # Apply MinMaxScaler to the features except time & flight
     scaler = MinMaxScaler()
@@ -121,9 +174,7 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
 
     #Create Data loaders 
 
-    
-    
-    train_loader, val_loader, test_loader = create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target)
+    train_loader, val_loader, test_loader = create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target)
     return data, train_loader, val_loader, test_loader
 
 def getFeatures():
@@ -131,8 +182,15 @@ def getFeatures():
                                     'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
                                     'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
                                     'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
-                                    'energy_atm','current_consumed','energy_consumed']
+                                    'energy_atm','current_consumed','energy_consumed', 'x_future', 'y_future', 'z_future']
     
 
 if __name__ == "__main__":
+    data = pd.read_csv('flights.csv') 
+    # data, train_loader, val_loader, test_loader = get_data_loaders(data, 24, 10)
+    features = getFeatures()
     print(len(getFeatures()))
+
+    data, train_loader, val_loader, test_loader = get_data_loaders(data, 24,10)
+    
+    print(data)
