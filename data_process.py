@@ -147,6 +147,10 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2, step_into_fut
     # Read the data from the CSV file
     # data = pd.read_csv('flights.csv')    
 
+    #Drop broken data records for flight 211 -219
+    flights_to_remove = [211,212,213,214,215,216,217,218,219]
+    data = data[~data['flight'].isin(flights_to_remove)]
+    
     # Apply the function to the altitude column and join with the original dataframe
     altitude_features = data['altitude'].apply(parse_altitude)
     data = data.join(altitude_features)
