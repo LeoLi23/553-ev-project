@@ -96,7 +96,7 @@ def create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size
     num_flights = len(uniq_flights)
     
     # By paper, [268, 269, 270, 271, 272, 273, 276, 277, 278, 279] are random flights and included in test set
-    force_test_flights = [268, 269, 270, 271, 272, 273, 276, 277, 278, 279]
+    force_test_flights = [268, 269, 270, 271, 272, 275, 276, 277, 278, 279]
     uniq_flights = list(set(uniq_flights) - set(force_test_flights))
 
     # Split the flights into training, validation, and test sets
