@@ -187,14 +187,20 @@ def calculate_consumptions(dataset):
     dataset['energy_consumed'] = dataset.groupby('flight')['energy_atm'].cumsum()
     return dataset
 
+def calculate_diff(group, step_into_future):
+    group['x_change'] = group['position_x'].shift(-step_into_future) - group['position_x']
+    group['y_change'] = group['position_y'].shift(-step_into_future) - group['position_y']
+    group['z_change'] = group['position_z'].shift(-step_into_future) - group['position_z']
+    return group
 
 def calculate_futures(dataset, step_into_future = 12):
     dataset['x_future'] = dataset.groupby('flight')['position_x'].shift(-step_into_future)
     dataset['y_future'] = dataset.groupby('flight')['position_y'].shift(-step_into_future)
     dataset['z_future'] = dataset.groupby('flight')['position_z'].shift(-step_into_future)
-    dataset['x_change'] = dataset.groupby('flight')['position_x'].diff()
-    dataset['y_change'] = dataset.groupby('flight')['position_y'].diff()
-    dataset['z_change'] = dataset.groupby('flight')['position_z'].diff()
+    # dataset['x_change'] = dataset.groupby('flight')['position_x'].shift(-step_into_future) - dataset.groupby('flight')['position_x']
+    # dataset['y_change'] = dataset.groupby('flight')['position_y'].shift(-step_into_future) - dataset.groupby('flight')['position_y']
+    # dataset['z_change'] = dataset.groupby('flight')['position_z'].shift(-step_into_future) - dataset.groupby('flight')['position_z']
+    dataset = dataset.groupby('flight').apply(lambda group: calculate_diff(group, step_into_future))
     dataset = dataset.dropna()
     return dataset 
 
@@ -264,21 +270,22 @@ if __name__ == "__main__":
     features = getFeatures()
     print(len(getFeatures()))
 
-    data, train_loader, val_loader, test_loader, train_flights, val_flights, test_flights = get_data_loaders(data, 24,10, covariates=True)
-    flight = random.choice(test_flights)
-    print(flight)
+    data, train_loader, val_loader, test_loader, d_split = get_data_loaders(data, 24,10, covariates=True)
+    # flight = random.choice(test_flights)
+    # print(flight)
     print(data['x_change'])
+    print(data)
 
-    #testing create_sequences_new()
-    input1,output1 = create_sequences(data[features].values, data['power'].values, 24,10)
-    print("Sequences dimension not separated by flight")
-    print(input1.shape)
-    print(output1.shape)
+    # #testing create_sequences_new()
+    # input1,output1 = create_sequences(data[features].values, data['power'].values, 24,10)
+    # print("Sequences dimension not separated by flight")
+    # print(input1.shape)
+    # print(output1.shape)
 
-    input2,output2 = create_sequences_new(data, 'power', 24,10)
-    print("Sequences dimensions separated by flights")
-    print(input2.shape)
-    print(output2.shape)
+    # input2,output2 = create_sequences_new(data, 'power', 24,10)
+    # print("Sequences dimensions separated by flights")
+    # print(input2.shape)
+    # print(output2.shape)
 
 
 """"
