@@ -26,10 +26,9 @@ def getFeatures():
 
 # Function to create sequences 
 # output_seq_len <= input_seq_len
-def create_sequences_new(data, target, input_seq_len, output_seq_len, shuffle = 0):
+def create_sequences_new(data, features, target, input_seq_len, output_seq_len, shuffle=True, rand_state=42):
     input_seq = []
     output_seq = []
-    features = getFeatures()
     flight_ids = data['flight'].unique()
 
     for id in flight_ids:
@@ -39,9 +38,9 @@ def create_sequences_new(data, target, input_seq_len, output_seq_len, shuffle = 
             input_seq.append(flight_input_data[i:i+input_seq_len])
             output_seq.append(flight_output_data[i+input_seq_len : i+input_seq_len+output_seq_len])
     
-    if shuffle == 1:
-        random.shuffle(input_seq)
-        random.shuffle(output_seq)
+    if shuffle:
+        random.Random(rand_state).shuffle(input_seq)
+        random.Random(rand_state).shuffle(output_seq)
         
     return np.array(input_seq), np.array(output_seq)
 
@@ -56,7 +55,11 @@ def create_sequences(input_data, output_data, input_seq_len, output_seq_len):
 def create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, 
                        target:str, features:list=None, covariates:bool=False):
     # Generate Input and Output Sequences
-    features = getFeatures()
+    if features is None:
+        features = getFeatures()
+    if covariates:
+        features = features + ['x_future','y_future','z_future']
+    assert target in features, "Target must be in features"
     input_seq, output_seq = create_sequences(data[features].values,data[target].values, input_seq_len, output_seq_len)
 
     # print(data["energy_consumed"].values)
@@ -106,6 +109,8 @@ def create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size
 
     train_flights = uniq_flights[num_other_tests + num_val_flights:]
 
+    d_split = {'train': train_flights, 'val': val_flights, 'test': test_flights}
+
     # # Split the data into training, validation, and test sets 
     # train_flights, test_flights = train_test_split(uniq_flights, test_size= test_size, random_state=rand_state)
     # train_flights, val_flights = train_test_split(train_flights, test_size = val_size, random_state=rand_state)
@@ -122,10 +127,16 @@ def create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size
     # print("TEST DATA")
     # print(test_data)
     # Generate Input and Output Sequences
-    features = getFeatures()
-    train_input_seq, train_output_seq = create_sequences(train_data[features].values,train_data[target].values, input_seq_len, output_seq_len)
-    val_input_seq, val_output_seq = create_sequences(val_data[features].values,val_data[target].values, input_seq_len, output_seq_len)
-    test_input_seq, test_output_seq = create_sequences(test_data[features].values,test_data[target].values, input_seq_len, output_seq_len)
+
+    if features is None:
+        features = getFeatures()
+    if covariates:
+        features = features + ['x_future','y_future','z_future']
+    assert target in features, "Target must be in features"
+    
+    train_input_seq, train_output_seq = create_sequences_new(train_data, features, target, input_seq_len, output_seq_len, shuffle=True, rand_state=rand_state)
+    val_input_seq, val_output_seq = create_sequences_new(val_data, features, target, input_seq_len, output_seq_len, shuffle=True, rand_state=rand_state)
+    test_input_seq, test_output_seq = create_sequences_new(test_data, features, target, input_seq_len, output_seq_len, shuffle=True, rand_state=rand_state)
 
     # Convert to PyTorch tensors
     X_train = torch.tensor(train_input_seq, dtype=torch.float32)
@@ -144,7 +155,7 @@ def create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size
 
     test_data = TensorDataset(X_test, y_test)
     test_loader = DataLoader(test_data, batch_size=batch_size)
-    return train_loader, val_loader, test_loader, train_flights, val_flights, test_flights
+    return train_loader, val_loader, test_loader, d_split
     ##
 
 
@@ -234,17 +245,17 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
     data[features] = scaler.fit_transform(data[features])
 
     #Create Data loaders 
-
-    train_loader, val_loader, test_loader, train_flights, val_flights, test_flights = create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target)
-    return data, train_loader, val_loader, test_loader, train_flights, val_flights, test_flights
+    # TODO: implement trim
+    train_loader, val_loader, test_loader, d_split = create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target,
+                                                                           features, covariates)
+    return data, train_loader, val_loader, test_loader, d_split
 
 def getFeatures():
     return ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
                                     'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
                                     'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
                                     'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
-                                    'energy_atm','current_consumed','energy_consumed', 
-                                    'x_future', 'y_future', 'z_future', 'x_change', 'y_change','z_change']
+                                    'energy_atm','current_consumed','energy_consumed']
     
 
 if __name__ == "__main__":
