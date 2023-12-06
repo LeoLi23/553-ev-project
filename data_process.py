@@ -2,6 +2,7 @@ import torch
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import random
 from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
@@ -13,8 +14,36 @@ warnings.filterwarnings("ignore")
 
 plt.ion()   # interactive mode
 
+
+def getFeatures():
+    return ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
+                                    'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
+                                    'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
+                                    'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
+                                    'energy_atm','current_consumed','energy_consumed', 'x_future', 'y_future', 'z_future']
+    
+
 # Function to create sequences 
 # output_seq_len <= input_seq_len
+def create_sequences_new(data, target, input_seq_len, output_seq_len, shuffle = 0):
+    input_seq = []
+    output_seq = []
+    features = getFeatures()
+    flight_ids = data['flight'].unique()
+
+    for id in flight_ids:
+        flight_input_data = data[data['flight'] == id][features].values
+        flight_output_data = data[data['flight'] == id][target].values
+        for i in range(len(flight_input_data) - input_seq_len - output_seq_len):
+            input_seq.append(flight_input_data[i:i+input_seq_len])
+            output_seq.append(flight_output_data[i+input_seq_len : i+input_seq_len+output_seq_len])
+    
+    if shuffle == 1:
+        random.shuffle(input_seq)
+        random.shuffle(output_seq)
+        
+    return np.array(input_seq), np.array(output_seq)
+
 def create_sequences(input_data, output_data, input_seq_len, output_seq_len):
     input_seq = []
     output_seq = []
@@ -26,7 +55,7 @@ def create_sequences(input_data, output_data, input_seq_len, output_seq_len):
 def create_dataloaders(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target: str):
     # Generate Input and Output Sequences
     features = getFeatures()
-    input_seq, output_seq = create_sequences(data[features].values,data[target].values, input_seq_len, output_seq_len)
+    input_seq, output_seq = create_sequences_new(data, target, input_seq_len, output_seq_len)
 
     # print(data["energy_consumed"].values)
     
@@ -76,9 +105,14 @@ def create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size
     # print(test_data)
     # Generate Input and Output Sequences
     features = getFeatures()
-    train_input_seq, train_output_seq = create_sequences(train_data[features].values,train_data[target].values, input_seq_len, output_seq_len)
-    val_input_seq, val_output_seq = create_sequences(val_data[features].values,val_data[target].values, input_seq_len, output_seq_len)
-    test_input_seq, test_output_seq = create_sequences(test_data[features].values,test_data[target].values, input_seq_len, output_seq_len)
+
+    #train_input_seq, train_output_seq = create_sequences(train_data[features].values,train_data[target].values, input_seq_len, output_seq_len)
+    #val_input_seq, val_output_seq = create_sequences(val_data[features].values,val_data[target].values, input_seq_len, output_seq_len)
+    #test_input_seq, test_output_seq = create_sequences(test_data[features].values,test_data[target].values, input_seq_len, output_seq_len)
+    train_input_seq, train_output_seq = create_sequences_new(train_data, target, input_seq_len, output_seq_len, shuffle = 1)
+    val_input_seq, val_output_seq = create_sequences_new(val_data, target, input_seq_len, output_seq_len, shuffle = 1)
+    test_input_seq, test_output_seq = create_sequences_new(test_data, target, input_seq_len, output_seq_len, shuffle = 1)
+   
 
     # Convert to PyTorch tensors
     X_train = torch.tensor(train_input_seq, dtype=torch.float32)
@@ -97,7 +131,7 @@ def create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size
 
     test_data = TensorDataset(X_test, y_test)
     test_loader = DataLoader(test_data, batch_size=batch_size)
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader, test_loader, train_flights, val_flights, test_flights
     ##
 
 
@@ -178,16 +212,10 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2, step_into_fut
 
     #Create Data loaders 
 
-    train_loader, val_loader, test_loader = create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target)
-    return data, train_loader, val_loader, test_loader
+    train_loader, val_loader, test_loader, train_flights, val_flights, test_flights = create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target)
+    return data, train_loader, val_loader, test_loader, train_flights, val_flights, test_flights
 
-def getFeatures():
-    return ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
-                                    'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
-                                    'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
-                                    'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
-                                    'energy_atm','current_consumed','energy_consumed', 'x_future', 'y_future', 'z_future']
-    
+
 
 if __name__ == "__main__":
     data = pd.read_csv('flights.csv') 
@@ -195,6 +223,28 @@ if __name__ == "__main__":
     features = getFeatures()
     print(len(getFeatures()))
 
-    data, train_loader, val_loader, test_loader = get_data_loaders(data, 24,10)
-    
+    data, train_loader, val_loader, test_loader, train_flights, val_flights, test_flights = get_data_loaders(data, 24,10)
+    flight = random.choice(test_flights)
+    print(flight)
     print(data)
+
+    #testing create_sequences_new()
+    input1,output1 = create_sequences(data[features].values, data['power'].values, 24,10)
+    print("Sequences dimension not separated by flight")
+    print(input1.shape)
+    print(output1.shape)
+
+    input2,output2 = create_sequences_new(data, 'power', 24,10)
+    print("Sequences dimensions separated by flights")
+    print(input2.shape)
+    print(output2.shape)
+
+
+""""
+TODO: 
+1) add air density
+2) add location difference
+3) create seq strictly based on flight class -- DONE, create_sequences_new()
+4) create function to create seq based on flights -- Done, created unique lists for test/train flights
+5) 
+"""
