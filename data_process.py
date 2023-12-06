@@ -181,6 +181,9 @@ def calculate_futures(dataset, step_into_future = 12):
     dataset['x_future'] = dataset.groupby('flight')['position_x'].shift(-step_into_future)
     dataset['y_future'] = dataset.groupby('flight')['position_y'].shift(-step_into_future)
     dataset['z_future'] = dataset.groupby('flight')['position_z'].shift(-step_into_future)
+    dataset['x_change'] = dataset.groupby('flight')['position_x'].diff()
+    dataset['y_change'] = dataset.groupby('flight')['position_y'].diff()
+    dataset['z_change'] = dataset.groupby('flight')['position_z'].diff()
     dataset = dataset.dropna()
     return dataset 
 
@@ -224,7 +227,7 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
     if features is None:
         features = getFeatures()
     if covariates:
-        features = features + ['x_future','y_future','z_future']
+        features = features + ['x_future','y_future','z_future'] + ['x_change', 'y_change','z_change']
 
     # Apply MinMaxScaler to the features except time & flight
     scaler = MinMaxScaler()
@@ -232,15 +235,16 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
 
     #Create Data loaders 
 
-    train_loader, val_loader, test_loader = create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target)
-    return data, train_loader, val_loader, test_loader
+    train_loader, val_loader, test_loader, train_flights, val_flights, test_flights = create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target)
+    return data, train_loader, val_loader, test_loader, train_flights, val_flights, test_flights
 
 def getFeatures():
     return ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
                                     'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
                                     'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
                                     'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
-                                    'energy_atm','current_consumed','energy_consumed', 'x_future', 'y_future', 'z_future']
+                                    'energy_atm','current_consumed','energy_consumed', 
+                                    'x_future', 'y_future', 'z_future', 'x_change', 'y_change','z_change']
     
 
 if __name__ == "__main__":
@@ -249,10 +253,10 @@ if __name__ == "__main__":
     features = getFeatures()
     print(len(getFeatures()))
 
-    data, train_loader, val_loader, test_loader, train_flights, val_flights, test_flights = get_data_loaders(data, 24,10)
+    data, train_loader, val_loader, test_loader, train_flights, val_flights, test_flights = get_data_loaders(data, 24,10, covariates=True)
     flight = random.choice(test_flights)
     print(flight)
-    print(data)
+    print(data['x_change'])
 
     #testing create_sequences_new()
     input1,output1 = create_sequences(data[features].values, data['power'].values, 24,10)
@@ -269,7 +273,7 @@ if __name__ == "__main__":
 """"
 TODO: 
 1) add air density
-2) add location difference
+2) add location difference -- Done
 3) create seq strictly based on flight class -- DONE, create_sequences_new()
 4) create function to create seq based on flights -- Done, created unique lists for test/train flights
 5) 
