@@ -128,10 +128,6 @@ def create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size
     # print(test_data)
     # Generate Input and Output Sequences
 
-    if features is None:
-        features = getFeatures()
-    if covariates:
-        features = features + ['x_future','y_future','z_future']
     assert target in features, "Target must be in features"
     
     train_input_seq, train_output_seq = create_sequences_new(train_data, features, target, input_seq_len, output_seq_len, shuffle=True, rand_state=rand_state)
@@ -213,7 +209,8 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
     target = 'power',
     trim:float=None,
     features:list=None,
-    covariates:bool=False):
+    covariates:bool=False,
+    scale:bool=True):
     # Read the data from the CSV file
     # data = pd.read_csv('flights.csv')    
 
@@ -247,13 +244,14 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
         features = features + ['x_future','y_future','z_future'] + ['x_change', 'y_change','z_change']
 
     # Apply MinMaxScaler to the features except time & flight
-    scaler = MinMaxScaler()
-    data[features] = scaler.fit_transform(data[features])
+    if scale:
+        scaler = MinMaxScaler()
+        data[features] = scaler.fit_transform(data[features])
 
     #Create Data loaders 
     # TODO: implement trim
     train_loader, val_loader, test_loader, d_split = create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target,
-                                                                           features, covariates)
+                                                                           features)
     return data, train_loader, val_loader, test_loader, d_split
 
 def getFeatures():
