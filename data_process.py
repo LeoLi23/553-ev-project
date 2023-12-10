@@ -95,7 +95,7 @@ def create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size
     # Split the flights into training, validation, and test sets
     random.Random(rand_state).shuffle(uniq_flights)
     num_other_tests = max(0, round(num_flights * test_size) - 10)
-    test_flights = uniq_flights[:num_other_tests] + [268, 269, 270, 271, 272, 273, 276, 277, 278, 279]
+    test_flights = uniq_flights[:num_other_tests] + [268, 269, 270, 271, 272, 275, 276, 277, 278, 279]
     
     num_val_flights = round(num_flights * val_size)
     val_flights = uniq_flights[num_other_tests:num_other_tests + num_val_flights]
