@@ -32,9 +32,13 @@ def create_sequences_new(data, features, target, input_seq_len, output_seq_len, 
             output_seq.append(flight_output_data[i+input_seq_len : i+input_seq_len+output_seq_len])
     
     if shuffle:
-        random.Random(rand_state).shuffle(input_seq)
-        random.Random(rand_state).shuffle(output_seq)
-        
+        combined = list(zip(input_seq, output_seq))
+        random.Random(rand_state).shuffle(combined)
+    
+    input_seq, output_seq = zip(*combined)
+    input_seq = list(input_seq)
+    output_seq = list(output_seq)
+    
     return np.array(input_seq), np.array(output_seq)
 
 def create_sequences(input_data, output_data, input_seq_len, output_seq_len):
