@@ -64,3 +64,18 @@ class TCN_LSTM(nn.Module):
         xt = x[:, -1, :].unsqueeze(1) # input the last time step of x into the decoder
         outputs = self.decoder(xt, h, c) # (batch_size, output_len, 1)
         return outputs
+    
+
+if __name__ == "__main__":
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(device)
+
+    select_features = ['payload', 'wind_speed', 'wind_angle', 'linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 'power']
+    input_size = len(select_features)
+    input_len = 20
+    output_len = 10
+    hidden_size = 32  
+    num_layers = 1
+
+    seq2seq = TCN_LSTM(input_size, input_len, output_len, [32, 32], hidden_size, num_layers=num_layers).to(device)
