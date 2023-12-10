@@ -34,8 +34,6 @@ def plot_output(y_pred_seq, y_true_seq, seq_len):
             if y_true_seq[i][j].detach().numpy() >0 :
                 pred_arr.append(y_pred_seq[i][j].detach().numpy()) 
                 true_arr.append(y_true_seq[i][j].detach().numpy()) 
-    # print(pred_arr)
-    # print(true_arr)
 
     
     plt.figure(figsize=(20, 5))

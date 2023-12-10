@@ -224,7 +224,7 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
     #calculation current consumption (Amp * s)
     data = calculate_consumptions(data)
     if covariates:
-        data = calculate_futures(data, output_seq_len)
+        data = calculate_futures(data, input_seq_len)
 
     # TODO: add air density as a feature (refer to paper code)
 
