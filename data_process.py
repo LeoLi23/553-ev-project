@@ -8,6 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset, DataLoader
+import metarhandler
 
 # Ignore warnings
 import warnings
@@ -176,9 +177,9 @@ def calculate_consumptions(dataset):
     return dataset
 
 def calculate_diff(group, step_into_future):
-    group['x_change'] = group['position_x'].shift(-step_into_future) - group['position_x']
-    group['y_change'] = group['position_y'].shift(-step_into_future) - group['position_y']
-    group['z_change'] = group['position_z'].shift(-step_into_future) - group['position_z']
+    group['x_change'] = group['position_x'].shift(-step_into_future) - group['position_x'].shift(-step_into_future+1)
+    group['y_change'] = group['position_y'].shift(-step_into_future) - group['position_y'].shift(-step_into_future+1)
+    group['z_change'] = group['position_z'].shift(-step_into_future) - group['position_z'].shift(-step_into_future+1)
     return group
 
 def calculate_futures(dataset, step_into_future = 12):
@@ -224,7 +225,7 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
     #calculation current consumption (Amp * s)
     data = calculate_consumptions(data)
     if covariates:
-        data = calculate_futures(data, output_seq_len)
+        data = calculate_futures(data, input_seq_len)
 
     # TODO: add air density as a feature (refer to paper code)
 
