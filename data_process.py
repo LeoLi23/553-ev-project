@@ -16,14 +16,6 @@ warnings.filterwarnings("ignore")
 plt.ion()   # interactive mode
 
 
-def getFeatures():
-    return ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
-                                    'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
-                                    'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
-                                    'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
-                                    'energy_atm','current_consumed','energy_consumed', 'x_future', 'y_future', 'z_future']
-    
-
 # Function to create sequences 
 # output_seq_len <= input_seq_len
 def create_sequences_new(data, features, target, input_seq_len, output_seq_len, shuffle=True, rand_state=42):
@@ -193,10 +185,8 @@ def calculate_futures(dataset, step_into_future = 12):
     dataset['x_future'] = dataset.groupby('flight')['position_x'].shift(-step_into_future)
     dataset['y_future'] = dataset.groupby('flight')['position_y'].shift(-step_into_future)
     dataset['z_future'] = dataset.groupby('flight')['position_z'].shift(-step_into_future)
-    # dataset['x_change'] = dataset.groupby('flight')['position_x'].shift(-step_into_future) - dataset.groupby('flight')['position_x']
-    # dataset['y_change'] = dataset.groupby('flight')['position_y'].shift(-step_into_future) - dataset.groupby('flight')['position_y']
-    # dataset['z_change'] = dataset.groupby('flight')['position_z'].shift(-step_into_future) - dataset.groupby('flight')['position_z']
     dataset = dataset.groupby('flight').apply(lambda group: calculate_diff(group, step_into_future))
+
     dataset = dataset.dropna()
     return dataset 
 
@@ -249,31 +239,41 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
         data[features] = scaler.fit_transform(data[features])
 
     #Create Data loaders 
-    # TODO: implement trim
+   
     train_loader, val_loader, test_loader, d_split = create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target,
                                                                            features)
     return data, train_loader, val_loader, test_loader, d_split
 
-def getFeatures(covariates=False):
-    features = ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
+def getFeatures(covariates = True):
+    if covariates:
+        return ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
+                                    'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
+                                    'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
+                                    'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
+                                    'energy_atm','current_consumed','energy_consumed', 'x_future', 'y_future', 'z_future'
+                                    ,'x_change', 'y_change', 'z_change']
+    else: 
+        return ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
                                     'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
                                     'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
                                     'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
                                     'energy_atm','current_consumed','energy_consumed']
-    if covariates:
-        features += ['x_future','y_future','z_future'] + ['x_change', 'y_change','z_change']
-    return features 
+   
 
 if __name__ == "__main__":
     data = pd.read_csv('flights.csv') 
     # data, train_loader, val_loader, test_loader = get_data_loaders(data, 24, 10)
     features = getFeatures()
-    print(len(getFeatures()))
+    data = data.groupby('flight').apply(lambda group: calculate_diff(group, 2))
+    print(data)
+    print(data['position_z'])
 
-    data, train_loader, val_loader, test_loader, d_split = get_data_loaders(data, 24,10, covariates=True)
+    print(len(getFeatures()))
+    
+    # data, train_loader, val_loader, test_loader, d_split = get_data_loaders(data, 24,10, covariates=True)
     # flight = random.choice(test_flights)
     # print(flight)
-    print(data['x_change'])
+    
     print(data)
 
     # #testing create_sequences_new()
@@ -289,7 +289,7 @@ if __name__ == "__main__":
 
 
 """"
-TODO: 
+TODO:   
 1) add air density
 2) add location difference -- Done
 3) create seq strictly based on flight class -- DONE, create_sequences_new()
