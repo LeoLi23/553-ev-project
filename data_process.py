@@ -8,7 +8,7 @@ from torch.utils.data import Dataset, DataLoader
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from torch.utils.data import TensorDataset, DataLoader
-import metarhandler
+# import metarhandler
 
 # Ignore warnings
 import warnings
