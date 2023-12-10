@@ -34,10 +34,9 @@ def create_sequences_new(data, features, target, input_seq_len, output_seq_len, 
     if shuffle:
         combined = list(zip(input_seq, output_seq))
         random.Random(rand_state).shuffle(combined)
-    
-    input_seq, output_seq = zip(*combined)
-    input_seq = list(input_seq)
-    output_seq = list(output_seq)
+        input_seq, output_seq = zip(*combined)
+        input_seq = list(input_seq)
+        output_seq = list(output_seq)
     
     return np.array(input_seq), np.array(output_seq)
 
