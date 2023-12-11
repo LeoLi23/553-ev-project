@@ -254,19 +254,22 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
     return data, train_loader, val_loader, test_loader, d_split, scaler
 
 def getFeatures(covariates = False):
+    """
+    Power is the last feature by default designed for model processing
+    """
     if covariates:
         return ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
                                     'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
                                     'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
-                                    'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
-                                    'energy_atm','current_consumed','energy_consumed', 'x_future', 'y_future', 'z_future'
+                                    'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','time_diff','current_atm',
+                                    'energy_atm','current_consumed','energy_consumed', 'power', 'x_future', 'y_future', 'z_future'
                                     ,'x_change', 'y_change', 'z_change']
     else: 
         return ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
                                     'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
                                     'angular_x', 'angular_y', 'angular_z','linear_acceleration_x', 'linear_acceleration_y', 'linear_acceleration_z', 
-                                    'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','power','time_diff','current_atm',
-                                    'energy_atm','current_consumed','energy_consumed']
+                                    'speed', 'payload', 'max_altitude', 'min_altitude', 'mean_altitude','route','time_diff','current_atm',
+                                    'energy_atm','current_consumed','energy_consumed', 'power']
    
 
 if __name__ == "__main__":
