@@ -234,8 +234,9 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
 
     if features is None:
         features = getFeatures()
+    
     if covariates:
-        features = features + ['x_future','y_future','z_future'] + ['x_change', 'y_change','z_change']
+        features = getFeatures(covariates=True)
 
     # Apply MinMaxScaler to the features except time & flight
     if scale:
@@ -248,7 +249,7 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
                                                                            features)
     return data, train_loader, val_loader, test_loader, d_split
 
-def getFeatures(covariates = True):
+def getFeatures(covariates = False):
     if covariates:
         return ['wind_speed','wind_angle','battery_voltage', 'battery_current', 'position_x', 'position_y', 'position_z', 
                                     'orientation_x', 'orientation_y', 'orientation_z', 'orientation_w', 'velocity_x', 'velocity_y', 'velocity_z',
