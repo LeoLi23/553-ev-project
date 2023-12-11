@@ -46,7 +46,7 @@ class Decoder(nn.Module):
 
 
 class DeepTCN(nn.Module):
-    def __init__(self, num_series, num_outputs, num_blocks, kernel_size, hidden_channels, num_covariates):
+    def __init__(self, num_series, num_blocks, kernel_size, hidden_channels, num_covariates):
         super(DeepTCN, self).__init__()
         self.num_covariates = num_covariates
         layers = []
@@ -61,10 +61,11 @@ class DeepTCN(nn.Module):
 
     def forward(self, x, covariates):
         # Encoder
-        x = x.permute(0, 2, 1)  # Assuming input of shape [batch, seq_len, features]
-        x = self.encoder(x) # [batch, hidden_channels, seq_len]
+        x = x.permute(0, 2, 1)  # [batch, seq_len, features] -> [batch, features, seq_len]
+        x = self.encoder(x) # Output shape: [batch, hidden_channels, seq_len]
+        # Average pooling over the sequence length dimension
+        x = x.mean(dim=2)
         # Decoder
-        x = x.mean(dim=2) # pool over the sequence length dimension
         outputs = []
         for seq_len_idx in range(covariates.shape[1]):
             current_covariate = covariates[:, seq_len_idx, :]

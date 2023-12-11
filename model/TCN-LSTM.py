@@ -30,32 +30,41 @@ class Decoder(nn.Module):
         self.num_layers = num_layers
         self.seq_len = seq_len
 
-    def forward(self, x, hidden, cell, covariates):
+    def forward(self, xt, hidden, cell, covariates):
         # repeat the hidden states according to the number of layers
         hidden = hidden.repeat(self.num_layers, 1, 1)
         cell = cell.repeat(self.num_layers, 1, 1)
+
         outputs = []
-        for t in range(self.seq_len): 
-            output, (hidden, cell) = self.lstm(x, (hidden, cell))
-            covariate = covariates[:, t, :].unsqueeze(1)
-            output = torch.cat((covariate, output), dim=2)
-            output = self.fc(output) 
+        for t in range(self.output_len):
+            output, (h, c) = self.decoder(xt, (h, c))
+            if self.covariate:
+                output = torch.cat((output, covariates[:, t, :].unsqueeze(1)), dim=2)
+            output = self.fc(output)
             outputs.append(output[:, :, -1].unsqueeze(2))
-            x = output
+            xt = output  # use the decoder output as the next input
 
         outputs = torch.cat(outputs, dim=1)
         return outputs
 
 
 class TCN_LSTM(nn.Module):
-    def __init__(self, input_size, input_len, covariate_size, output_len, tcn_num_channels, lstm_num_hidden, tcn_kernel_size=2, tcn_dropout=0.2, num_layers=1):
+    def __init__(self, encoder_input_size, decoder_input_size, input_len, output_len, tcn_num_channels, lstm_num_hidden, 
+                 tcn_kernel_size=2, tcn_dropout=0.2, num_layers=1, covariate=False, covariate_size=0):
         super(TCN_LSTM, self).__init__()
-        self.encoder = Encoder(input_size, input_len, tcn_num_channels, lstm_num_hidden, tcn_kernel_size, tcn_dropout)
-        self.decoder = Decoder(input_size, covariate_size, output_len, lstm_num_hidden, num_layers)
+        self.encoder = Encoder(encoder_input_size, input_len, tcn_num_channels, lstm_num_hidden, tcn_kernel_size, tcn_dropout)
+        self.decoder = Decoder(decoder_input_size, output_len, lstm_num_hidden, num_layers)
+        self.decoder_input_size = decoder_input_size
 
     def forward(self, historic_inputs, covariates):
+        """
+        By default, the last feature of the encoder input is the target feature.
+        And the decoder_input = encoder_input[-decoder_input_size:]
+        """
         # x: (batch_size, input_len, input_size)
         h, c = self.encoder(historic_inputs)
-        xt = historic_inputs[:, -1, :].unsqueeze(1) 
+        xt = historic_inputs[:, -1, -self.decoder_input_size:].unsqueeze(1)
+        if self.decoder_input_size == 1:
+            xt = xt.unsqueeze(2)
         outputs = self.decoder(xt, h, c, covariates) # (batch_size, output_len, 1)
         return outputs
