@@ -240,15 +240,18 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
         
     print(features)
     # Apply MinMaxScaler to the features except time & flight
+    scaler = None
     if scale:
         scaler = MinMaxScaler()
-        data[features] = scaler.fit_transform(data[features])
+        features_no_energy = [x for x in features if x != 'energy_consumed' ]
+        data['time_diff_unscaled'] = data['time_diff']
+        data[features_no_energy] = scaler.fit_transform(data[features_no_energy])
 
     #Create Data loaders 
    
     train_loader, val_loader, test_loader, d_split = create_dataloaders_by_flights(data, input_seq_len, output_seq_len, test_size, val_size, batch_size, rand_state, target,
                                                                            features)
-    return data, train_loader, val_loader, test_loader, d_split
+    return data, train_loader, val_loader, test_loader, d_split, scaler
 
 def getFeatures(covariates = False):
     if covariates:
@@ -269,18 +272,21 @@ def getFeatures(covariates = False):
 if __name__ == "__main__":
     data = pd.read_csv('flights.csv') 
     # data, train_loader, val_loader, test_loader = get_data_loaders(data, 24, 10)
-    features = getFeatures()
-    data = data.groupby('flight').apply(lambda group: calculate_diff(group, 2))
-    print(data)
-    print(data['position_z'])
+    features = getFeatures(covariates= True)
+    # data = data.groupby('flight').apply(lambda group: calculate_diff(group, 2))
+    # print(data)
+    # print(data['position_z'])
 
     print(len(getFeatures()))
     
-    # data, train_loader, val_loader, test_loader, d_split = get_data_loaders(data, 24,10, covariates=True)
+    data, train_loader, val_loader, test_loader, d_split,scaler = get_data_loaders(data, 24,10, covariates=True)
     # flight = random.choice(test_flights)
     # print(flight)
     
     print(data)
+    print(data[data['flight'] == 8]['energy_consumed'])
+    print(data[data['flight'] == 1]['energy_consumed'])
+    print(data['time_diff_unscaled'])
 
     # #testing create_sequences_new()
     # input1,output1 = create_sequences(data[features].values, data['power'].values, 24,10)
