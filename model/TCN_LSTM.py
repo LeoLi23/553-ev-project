@@ -56,6 +56,7 @@ class TCN_LSTM(nn.Module):
     def __init__(self, encoder_input_size, decoder_input_size, input_len, output_len, tcn_num_channels, lstm_num_hidden, 
                  tcn_kernel_size=2, tcn_dropout=0.2, num_layers=1, covariate=False, covariate_size=0):
         super(TCN_LSTM, self).__init__()
+        self.name = 'TCN_LSTM'
         self.encoder = Encoder(encoder_input_size, input_len, tcn_num_channels, lstm_num_hidden, tcn_kernel_size, tcn_dropout)
         self.decoder = Decoder(decoder_input_size, output_len, lstm_num_hidden, num_layers, covariate, covariate_size)
         self.decoder_input_size = decoder_input_size

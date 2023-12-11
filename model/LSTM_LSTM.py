@@ -5,6 +5,7 @@ import torch.nn as nn
 class LSTM_LSTM(nn.Module):
     def __init__(self, encoder_input_size, decoder_input_size, input_len, output_len, lstm_num_hidden, num_layers=1, covariate_size=0, covariate=False):
         super(LSTM_LSTM, self).__init__()
+        self.name = 'LSTM_LSTM'
         if covariate:
             assert covariate_size > 0
         self.encoder = nn.LSTM(encoder_input_size, lstm_num_hidden, num_layers, batch_first=True)

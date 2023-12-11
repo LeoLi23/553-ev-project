@@ -243,9 +243,9 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
     scaler = None
     if scale:
         scaler = MinMaxScaler()
-        features_no_energy = [x for x in features if x != 'energy_consumed' ]
+        data['energy_consumed_unscaled'] = data['energy_consumed']
         data['time_diff_unscaled'] = data['time_diff']
-        data[features_no_energy] = scaler.fit_transform(data[features_no_energy])
+        data[features] = scaler.fit_transform(data[features])
 
     #Create Data loaders 
    
