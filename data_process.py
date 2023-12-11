@@ -236,8 +236,9 @@ def get_data_loaders(data, input_seq_len = 10, output_seq_len = 2,
         features = getFeatures()
     
     if covariates:
-        features = getFeatures(covariates=True)
-
+        features = features + ['x_future','y_future','z_future'] + ['x_change', 'y_change', 'z_change']
+        
+    print(features)
     # Apply MinMaxScaler to the features except time & flight
     if scale:
         scaler = MinMaxScaler()
