@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from TCN import TemporalConvNet
+from model.TCN import TemporalConvNet
 
 
 class Encoder(nn.Module):
@@ -23,21 +23,25 @@ class Encoder(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, input_size, covariate_size, seq_len, hidden_size, num_layers=1):
+    def __init__(self, input_size, seq_len, hidden_size, num_layers=1, covariate=False, covariate_size=0):
         super(Decoder, self).__init__()
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.fc = nn.Linear(hidden_size+covariate_size, input_size)
+        if covariate:
+            self.fc = nn.Linear(hidden_size+covariate_size, input_size)
+        else:
+            self.fc = nn.Linear(hidden_size, input_size)
         self.num_layers = num_layers
         self.seq_len = seq_len
+        self.covariate = covariate
 
-    def forward(self, xt, hidden, cell, covariates):
+    def forward(self, xt, hidden, cell, covariates=None):
         # repeat the hidden states according to the number of layers
-        hidden = hidden.repeat(self.num_layers, 1, 1)
-        cell = cell.repeat(self.num_layers, 1, 1)
+        h = hidden.repeat(self.num_layers, 1, 1)
+        c = cell.repeat(self.num_layers, 1, 1)
 
         outputs = []
-        for t in range(self.output_len):
-            output, (h, c) = self.decoder(xt, (h, c))
+        for t in range(self.seq_len):
+            output, (h, c) = self.lstm(xt, (h, c))
             if self.covariate:
                 output = torch.cat((output, covariates[:, t, :].unsqueeze(1)), dim=2)
             output = self.fc(output)
@@ -53,10 +57,10 @@ class TCN_LSTM(nn.Module):
                  tcn_kernel_size=2, tcn_dropout=0.2, num_layers=1, covariate=False, covariate_size=0):
         super(TCN_LSTM, self).__init__()
         self.encoder = Encoder(encoder_input_size, input_len, tcn_num_channels, lstm_num_hidden, tcn_kernel_size, tcn_dropout)
-        self.decoder = Decoder(decoder_input_size, output_len, lstm_num_hidden, num_layers)
+        self.decoder = Decoder(decoder_input_size, output_len, lstm_num_hidden, num_layers, covariate, covariate_size)
         self.decoder_input_size = decoder_input_size
 
-    def forward(self, historic_inputs, covariates):
+    def forward(self, historic_inputs, covariates=None):
         """
         By default, the last feature of the encoder input is the target feature.
         And the decoder_input = encoder_input[-decoder_input_size:]
@@ -68,3 +72,4 @@ class TCN_LSTM(nn.Module):
             xt = xt.unsqueeze(2)
         outputs = self.decoder(xt, h, c, covariates) # (batch_size, output_len, 1)
         return outputs
+    

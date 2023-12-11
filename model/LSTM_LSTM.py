@@ -28,6 +28,7 @@ class LSTM_LSTM(nn.Module):
         xt = x[:, -1, -self.decoder_input_size:].unsqueeze(1)
         if self.decoder_input_size == 1:
             xt = xt.unsqueeze(2)
+        outputs = []
         for t in range(self.output_len):
             output, (h, c) = self.decoder(xt, (h, c))
             if self.covariate:
