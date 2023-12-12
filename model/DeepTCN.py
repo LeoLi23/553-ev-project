@@ -48,6 +48,7 @@ class Decoder(nn.Module):
 class DeepTCN(nn.Module):
     def __init__(self, num_series, num_blocks, kernel_size, hidden_channels, num_covariates):
         super(DeepTCN, self).__init__()
+        self.name = 'DeepTCN'
         self.num_covariates = num_covariates
         layers = []
         for i in range(num_blocks):
