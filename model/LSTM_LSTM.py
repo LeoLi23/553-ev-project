@@ -33,7 +33,7 @@ class LSTM_LSTM(nn.Module):
         for t in range(self.output_len):
             output, (h, c) = self.decoder(xt, (h, c))
             if self.covariate:
-                output = torch.cat((output, covariates[:, t, :].unsqueeze(1)), dim=2)
+                output = torch.cat((covariates[:, t, :].unsqueeze(1), output), dim=2)
             output = self.fc(output)
             outputs.append(output[:, :, -1].unsqueeze(2))
             xt = output  # use the decoder output as the next input
