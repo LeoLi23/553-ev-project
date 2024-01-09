@@ -3,3 +3,4 @@ parameters.csv
 .vscode/
 venv/
 __pycache__/
+.idea/
