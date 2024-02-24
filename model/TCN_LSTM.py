@@ -6,6 +6,7 @@ from model.TCN import TemporalConvNet
 class Encoder(nn.Module):
     def __init__(self, input_size, seq_len, tcn_num_channels, lstm_num_hidden, tcn_kernel_size=2, tcn_dropout=0.2):
         super(Encoder, self).__init__()
+        self.name = 'TCN_LSTM'
         self.tcn = TemporalConvNet(input_size, tcn_num_channels, tcn_kernel_size, tcn_dropout)
         self.fc_feature = nn.Linear(tcn_num_channels[-1], lstm_num_hidden)
         self.fc_time = nn.Linear(seq_len, 1)
@@ -43,7 +44,7 @@ class Decoder(nn.Module):
         for t in range(self.seq_len):
             output, (h, c) = self.lstm(xt, (h, c))
             if self.covariate:
-                output = torch.cat((output, covariates[:, t, :].unsqueeze(1)), dim=2)
+                output = torch.cat((covariates[:, t, :].unsqueeze(1), output), dim=2)
             output = self.fc(output)
             outputs.append(output[:, :, -1].unsqueeze(2))
             xt = output  # use the decoder output as the next input
